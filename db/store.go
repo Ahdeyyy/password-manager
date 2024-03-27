@@ -1,10 +1,12 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func OpenDatabase(path string) *sql.DB {
@@ -58,9 +60,46 @@ func OpenDatabase(path string) *sql.DB {
 
 }
 
+func EditProfile(database *sql.DB, profile Profile) error {
+	statement := `UPDATE profiles SET name = ?, master_password = ? WHERE id = ?;`
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(profile.MasterPassword), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+	_, err = database.Exec(statement, profile.Name, hashedPassword, profile.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteProfile(database *sql.DB, profile Profile) error {
+
+	tx, err := database.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelDefault})
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM password_items WHERE user = ?;", profile.Name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec("DELETE FROM profiles WHERE id = ?;", profile.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
 func AddProfile(database *sql.DB, profile Profile) error {
 	statement := `INSERT INTO profiles (name , master_password) VALUES(?,?);`
-	_, err := database.Exec(statement, profile.Name, profile.MasterPassword)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(profile.MasterPassword), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+	_, err = database.Exec(statement, profile.Name, hashedPassword)
 	if err != nil {
 		return err
 	}
