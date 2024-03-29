@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -11,11 +10,12 @@ import (
 func EditProfile(database *sql.DB, profile Profile) error {
 	statement := `UPDATE profiles SET name = ?, master_password = ? WHERE id = ?;`
 	previousProfile, err := GetProfile(database, int(profile.Id))
-	profile.CompareAndEdit(previousProfile)
+	previousProfile.CompareAndEdit(profile)
 	if err != nil {
 		return err
 	}
-	_, err = database.Exec(statement, profile.Name, profile.MasterPassword, profile.Id)
+
+	_, err = database.Exec(statement, previousProfile.Name, previousProfile.MasterPassword, previousProfile.Id)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func AddProfile(database *sql.DB, profile Profile) error {
 	if err != nil {
 		return err
 	}
-	_, err = database.Exec(statement, profile.Name, hashedPassword)
+	_, err = database.Exec(statement, profile.Name, string(hashedPassword))
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,6 @@ func GetProfiles(database *sql.DB) ([]Profile, error) {
 	for result.Next() {
 		var profile Profile
 		err = result.Scan(&profile.Id, &profile.Name, &profile.MasterPassword)
-		log.Printf("%v", profile)
 		if err != nil {
 			continue
 		}
@@ -80,8 +79,7 @@ func GetProfile(database *sql.DB, id int) (Profile, error) {
 	profile := Profile{}
 	statement := "SELECT * FROM profiles WHERE ID = ?"
 	result := database.QueryRow(statement, id)
-
-	err := result.Scan(profile.Id, profile.Name, profile.MasterPassword)
+	err := result.Scan(&profile.Id, &profile.Name, &profile.MasterPassword)
 	if err != nil {
 		return profile, err
 	}

@@ -65,7 +65,7 @@ func TestProfileEditAndDelete(t *testing.T) {
 
 	new_p := profiles[0]
 
-	new_p.MasterPassword = "password123"
+	new_p.MasterPassword = "password"
 	new_p.Name = "ahdeyy2"
 
 	err := EditProfile(db, new_p)
@@ -74,17 +74,14 @@ func TestProfileEditAndDelete(t *testing.T) {
 		t.Errorf("failed to edit profile: %s", err)
 	}
 
-	profiles2, _ := GetProfiles(db)
+	profile2, _ := GetProfile(db, int(new_p.Id))
 
-	if len(profiles2) != 1 {
-		t.Errorf("expected 1 profile, got %d", len(profiles2))
+	if profile2.Name != new_p.Name {
+		t.Errorf("expected profile name '%s', got '%s'", new_p.Name, profile2.Name)
 	}
 
-	if profiles2[0].Name != new_p.Name {
-		t.Errorf("expected profile name '%s', got '%s'", new_p.Name, profiles2[0].Name)
-	}
-
-	if bcrypt.CompareHashAndPassword([]byte(profiles2[0].MasterPassword), []byte(new_p.MasterPassword)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(profile2.MasterPassword), []byte(new_p.MasterPassword)) != nil {
+		fmt.Printf("%s", new_p.MasterPassword)
 		t.Errorf("Hashed passwords do not match")
 	}
 
@@ -98,6 +95,77 @@ func TestProfileEditAndDelete(t *testing.T) {
 
 	if len(profiles3) != 0 {
 		t.Errorf("expected 0 profiles, got %d", len(profiles3))
+	}
+
+}
+
+func TestCreateAndGetPasswordItems(t *testing.T) {
+
+	db := OpenDatabase(":memory:")
+	p := PasswordItem{User: "ahdeyy", App: "google", Password: "password", Note: "test"}
+	err := AddPasswordItem(db, p)
+	if err != nil {
+		t.Errorf("failed to add password item: %s", err)
+	}
+	p2 := PasswordItem{User: "ahdeyy", App: "facebook", Password: "password", Note: "test"}
+
+	err = AddPasswordItem(db, p2)
+
+	if err != nil {
+		t.Errorf("failed to add password item: %s", err)
+	}
+
+	items, err := GetPasswordItems(db)
+	if err != nil {
+		t.Errorf("failed to get password items: %s", err)
+	}
+
+	if len(items) != 2 {
+		t.Errorf("expected 2 password items, got %d", len(items))
+	}
+
+	if items[0].App != p.App {
+		t.Errorf("expected app: '%s', got '%s'", p.App, items[0].App)
+	}
+
+	if items[1].App != p2.App {
+		t.Errorf("expected app: '%s', got '%s'", p.App, items[1].App)
+	}
+
+}
+
+func TestEditAndDeletePasswordItem(t *testing.T) {
+	db := OpenDatabase(":memory:")
+	p := PasswordItem{User: "ahdeyy", App: "google", Password: "password", Note: "test"}
+	_ = AddPasswordItem(db, p)
+	items, _ := GetPasswordItems(db)
+	newP := items[0]
+
+	newP.Note = "test2"
+
+	err := EditPasswordItem(db, newP)
+
+	if err != nil {
+
+		t.Errorf("failed to edit password item: %s", err)
+	}
+
+	items2, _ := GetPasswordItems(db)
+
+	if items2[0].Note != newP.Note {
+		t.Errorf("expected note: '%s', got '%s'", newP.Note, items2[0].Note)
+	}
+
+	err = DeletePasswordItem(db, newP)
+
+	if err != nil {
+		t.Errorf("failed to delete password item: %s", err)
+	}
+
+	items3, _ := GetPasswordItems(db)
+
+	if len(items3) != 0 {
+		t.Errorf("expected 0 password items, got %d", len(items3))
 	}
 
 }

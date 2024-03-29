@@ -1,12 +1,10 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func OpenDatabase(path string) *sql.DB {
