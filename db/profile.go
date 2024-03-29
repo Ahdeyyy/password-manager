@@ -10,11 +10,12 @@ import (
 
 func EditProfile(database *sql.DB, profile Profile) error {
 	statement := `UPDATE profiles SET name = ?, master_password = ? WHERE id = ?;`
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(profile.MasterPassword), bcrypt.MinCost)
+	previousProfile, err := GetProfile(database, int(profile.Id))
+	profile.CompareAndEdit(previousProfile)
 	if err != nil {
 		return err
 	}
-	_, err = database.Exec(statement, profile.Name, hashedPassword, profile.Id)
+	_, err = database.Exec(statement, profile.Name, profile.MasterPassword, profile.Id)
 	if err != nil {
 		return err
 	}
@@ -73,4 +74,16 @@ func GetProfiles(database *sql.DB) ([]Profile, error) {
 		profiles = append(profiles, profile)
 	}
 	return profiles, nil
+}
+
+func GetProfile(database *sql.DB, id int) (Profile, error) {
+	profile := Profile{}
+	statement := "SELECT * FROM profliles WHERE ID = ?"
+	result := database.QueryRow(statement, id)
+
+	err := result.Scan(profile.Id, profile.Name, profile.MasterPassword)
+	if err != nil {
+		return profile, err
+	}
+	return profile, nil
 }
