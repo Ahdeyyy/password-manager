@@ -78,7 +78,7 @@ func GetProfiles(database *sql.DB) ([]Profile, error) {
 
 func GetProfile(database *sql.DB, id int) (Profile, error) {
 	profile := Profile{}
-	statement := "SELECT * FROM profliles WHERE ID = ?"
+	statement := "SELECT * FROM profiles WHERE ID = ?"
 	result := database.QueryRow(statement, id)
 
 	err := result.Scan(profile.Id, profile.Name, profile.MasterPassword)
