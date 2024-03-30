@@ -6,6 +6,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func SearchPasswordItems(database *sql.DB, user, query string) []PasswordItem {
+	var passwordItems []PasswordItem
+	statement := "SELECT * FROM password_items WHERE app LIKE ? AND user = ?"
+	result, err := database.Query(statement, "%"+query+"%", user)
+	defer result.Close()
+	if err != nil {
+		return passwordItems
+	}
+
+	for result.Next() {
+		var password PasswordItem
+		err = result.Scan(&password.Id, &password.User, &password.App, &password.Password, &password.Note)
+		if err != nil {
+			continue
+		}
+		passwordItems = append(passwordItems, password)
+	}
+
+	return passwordItems
+}
+
 func GetPassword(database *sql.DB, id int) (PasswordItem, error) {
 	password := PasswordItem{}
 	statement := "SELECT * FROM password_items WHERE ID = ?"

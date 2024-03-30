@@ -7,6 +7,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func ConfirmProfilePassword(database *sql.DB, id int, password string) (bool, error) {
+	profile, err := GetProfile(database, id)
+	if err != nil {
+		return false, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(profile.MasterPassword), []byte(password))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func EditProfile(database *sql.DB, profile Profile) error {
 	statement := `UPDATE profiles SET name = ?, master_password = ? WHERE id = ?;`
 	previousProfile, err := GetProfile(database, int(profile.Id))

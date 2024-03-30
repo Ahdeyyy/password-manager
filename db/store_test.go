@@ -169,3 +169,39 @@ func TestEditAndDeletePasswordItem(t *testing.T) {
 	}
 
 }
+
+func TestSearchPasswordItems(t *testing.T) {
+	db := OpenDatabase(":memory:")
+
+	p1 := PasswordItem{User: "ahdeyy", App: "google", Password: "password", Note: "test"}
+	_ = AddPasswordItem(db, p1)
+	p2 := PasswordItem{User: "ahdeyy", App: "facebook", Password: "password", Note: "test"}
+	_ = AddPasswordItem(db, p2)
+	p3 := PasswordItem{User: "ahdeyy", App: "twitter", Password: "password", Note: "test"}
+	_ = AddPasswordItem(db, p3)
+
+	passwords := SearchPasswordItems(db, "ahdeyy", "oo")
+
+	if len(passwords) != 2 {
+		t.Errorf("expected 2 password items, got %d", len(passwords))
+	}
+
+}
+
+func TestConfirmProfilePassword(t *testing.T) {
+	db := OpenDatabase(":memory:")
+
+	p := Profile{Name: "ahdeyy", MasterPassword: "password"}
+
+	_ = AddProfile(db, p)
+
+	profile := Profile{Name: "ahdeyy", MasterPassword: "password"}
+
+	// NOTE: I assumed the id would be 1 here
+	isOk, err := ConfirmProfilePassword(db, 1, profile.MasterPassword)
+
+	if !isOk || err != nil {
+		t.Errorf("expected true, got false")
+	}
+
+}
